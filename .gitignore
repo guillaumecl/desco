@@ -1,3 +1,6 @@
 desco
 *.o
 *~
+GTAGS
+GRTAGS
+GPATH
