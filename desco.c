@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 
-	log_file = open("/var/log/desco.log", O_WRONLY | O_CREAT, mode);
+	log_file = open("/var/log/desco.log", O_WRONLY | O_CREAT | O_APPEND, mode);
 
 	if (dup2(log_file, fileno(stderr)) != fileno(stderr) ||
 		dup2(log_file, fileno(stdout)) != fileno(stdout)) {
