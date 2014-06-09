@@ -1,8 +1,13 @@
-#include "SDL.h"
-#include "SDL_image.h"
+#include <sys/stat.h>
+#include <stdio.h>
+#include <fcntl.h>
+
+#include <SDL.h>
+#include <SDL_image.h>
 
 SDL_Surface *init_sdl()
 {
+	printf("Initializing SDL...\n");
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Cannot initialize SDL\n");
 		return NULL;
@@ -10,6 +15,7 @@ SDL_Surface *init_sdl()
 
 	SDL_Rect **modes;
 
+	printf("Finding video modes...\n");
 	/* Get available fullscreen/hardware modes */
 	modes=SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE|SDL_DOUBLEBUF);
 
@@ -28,6 +34,7 @@ SDL_Surface *init_sdl()
 	/* Take the first mode, typically the best one. */
 	/* TODO allow to select another mode as well. */
 
+	printf("Setting up video mode to %dx%d...\n", modes[0]->w, modes[0]->h);
 	SDL_Surface *screen = SDL_SetVideoMode(modes[0]->w, modes[0]->h, 0,
 		SDL_FULLSCREEN|SDL_HWSURFACE);
 	if (!screen) {
@@ -36,6 +43,7 @@ SDL_Surface *init_sdl()
 		return NULL;
 	}
 
+	printf("Hiding cursor...\n");
 	SDL_ShowCursor(0);
 
 	return screen;
@@ -46,12 +54,24 @@ int main(int argc, char **argv)
 	(void)argc;
 	(void)argv;
 
+	int log_file;
+	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+	log_file = open("/var/log/desco.log", O_WRONLY | O_CREAT, mode);
+
+	if (dup2(log_file, fileno(stderr)) != fileno(stderr) ||
+		dup2(log_file, fileno(stdout)) != fileno(stdout)) {
+		perror("Unable to redirect output");
+	}
+
 	SDL_Surface *screen = init_sdl();
 	if (!screen)
 		return 1;
 
-	SDL_Surface *background = IMG_Load("desco.png");
+	printf("Opening background image...\n");
+	SDL_Surface *background = IMG_Load("/root/desco/desco.png");
 	if (background) {
+		printf("Showing background image...\n");
 		SDL_BlitSurface(background, NULL, screen, NULL);
 		SDL_Flip(screen);
 	}
@@ -79,6 +99,7 @@ int main(int argc, char **argv)
 			SDL_Delay(10);
 		}
 	}
+	printf("Terminating.\n");
 	SDL_Quit();
 
 	return 0;
