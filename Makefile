@@ -11,6 +11,12 @@ BIN=desco
 
 all: ${BIN}
 
+# deploy depends on the binary so that we're sure it compiles here, at least.
+deploy: ${BIN}
+	make clean
+	rsync -av * desco:/root/desco/
+	ssh desco make -C /root/desco
+
 ${BIN}: ${OBJECTS}
 	${CC} -o $@ $^ ${LDFLAGS}
 
