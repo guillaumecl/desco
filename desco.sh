@@ -2,8 +2,7 @@
 
 source /etc/profile
 
-sleep 3s
+[ -f /run/desco_first ] && sleep 1s
+touch /run/desco_first
 
 exec nohup /root/desco/desco < /dev/null &> /var/log/desco.log
-
-
