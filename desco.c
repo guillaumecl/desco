@@ -1,4 +1,5 @@
 #include "SDL.h"
+#include "SDL_image.h"
 
 SDL_Surface *init_sdl()
 {
@@ -10,7 +11,7 @@ SDL_Surface *init_sdl()
 	SDL_Rect **modes;
 
 	/* Get available fullscreen/hardware modes */
-	modes=SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE);
+	modes=SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE|SDL_DOUBLEBUF);
 
 	/* Check is there are any modes available */
 	if(modes == (SDL_Rect **)0) {
@@ -48,6 +49,12 @@ int main(int argc, char **argv)
 	SDL_Surface *screen = init_sdl();
 	if (!screen)
 		return 1;
+
+	SDL_Surface *background = IMG_Load("desco.png");
+	if (background) {
+		SDL_BlitSurface(background, NULL, screen, NULL);
+		SDL_Flip(screen);
+	}
 
 	int done = 0;
 	SDL_Event event;

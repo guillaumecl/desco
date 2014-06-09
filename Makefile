@@ -1,7 +1,7 @@
 CFLAGS=-Wall -Wextra -Werror -O3
 CFLAGS+=$(shell sdl-config --cflags)
 LDFLAGS=-g
-LDFLAGS+=$(shell sdl-config --libs)
+LDFLAGS+=$(shell sdl-config --libs) -lSDL_image -lSDL_ttf
 
 SOURCES=${wildcard *.c}
 HEADERS=${wildcard *.h}
