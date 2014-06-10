@@ -7,26 +7,34 @@
 #define PNG_DEBUG 3
 #include <png.h>
 
+#include "framebuffer.h"
+
 struct png_file {
 	int width;
 	int height;
-	png_byte *data;
-};
-
-struct png_file *read_png_file(char* file_name)
-{
-	int x, y;
-
-	int width, height;
 	png_byte color_type;
 	png_byte bit_depth;
+	png_bytep *data;
+};
+
+// static uint16_t c_24_to_16(uint32_t rgb)
+// {
+// 	return ((((rgb>>16)&0xff) / 8) << 11) | ((((rgb>>8)&0xff) / 4) << 5) | (rgb / 8);
+// }
+
+struct png_file *open_png_file(char* file_name, struct framebuffer *fb)
+{
+	(void)fb;
+	int y;
+
+	int width, height;
 
 	png_structp png_ptr;
 	png_infop info_ptr;
-	png_file * result;
+	struct png_file * result;
 	png_bytep * row_pointers;
 
-        char header[8];    // 8 is the maximum size that can be checked
+        unsigned char header[8];    // 8 is the maximum size that can be checked
 
         /* open file and test for it being a png */
         FILE *fp = fopen(file_name, "rb");
@@ -35,7 +43,12 @@ struct png_file *read_png_file(char* file_name)
                 perror("Cannot open file");
 		return NULL;
 	}
-        fread(header, 1, 8, fp);
+        if (fread(header, 1, 8, fp) != 8)
+	{
+                fprintf(stderr, "%s is not recognized as a PNG file", file_name);
+		fclose(fp);
+		return NULL;
+	}
         if (png_sig_cmp(header, 0, 8))
 	{
                 fprintf(stderr, "%s is not recognized as a PNG file", file_name);
@@ -64,7 +77,7 @@ struct png_file *read_png_file(char* file_name)
 
         if (setjmp(png_jmpbuf(png_ptr)))
 	{
-		fprintf("Cannot read the PNG file");
+		fprintf(stderr, "Cannot read the PNG file");
 		fclose(fp);
 		return NULL;
 	}
@@ -76,11 +89,10 @@ struct png_file *read_png_file(char* file_name)
 
         width = png_get_image_width(png_ptr, info_ptr);
         height = png_get_image_height(png_ptr, info_ptr);
-        color_type = png_get_color_type(png_ptr, info_ptr);
-        bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 
         png_read_update_info(png_ptr, info_ptr);
 
+	row_pointers = (png_bytep*) calloc(height, sizeof(png_bytep));
 
         /* read file */
         if (setjmp(png_jmpbuf(png_ptr)))
@@ -95,7 +107,6 @@ struct png_file *read_png_file(char* file_name)
 		return NULL;
 	}
 
-	row_pointers = (png_bytep*) calloc(height, sizeof(png_bytep));
         for (y=0; y<height; y++)
                 row_pointers[y] = (png_byte*) malloc(png_get_rowbytes(png_ptr,info_ptr));
 
@@ -105,53 +116,39 @@ struct png_file *read_png_file(char* file_name)
 
 	result = malloc(sizeof(struct png_file));
 
-        result->width = png_get_image_width(png_ptr, info_ptr);
-        result->height = png_get_image_height(png_ptr, info_ptr);
+        result->width = width;
+        result->height = height;
         result->color_type = png_get_color_type(png_ptr, info_ptr);
-        result->bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-	result->data = rowbytes;
 
+	// if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB)
+        //         abort_("[process_file] input file is PNG_COLOR_TYPE_RGB but must be PNG_COLOR_TYPE_RGBA "
+	// 		"(lacks the alpha channel)");
+
+        // if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA)
+        //         abort_("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGBA (%d) (is %d)",
+	// 		PNG_COLOR_TYPE_RGBA, png_get_color_type(png_ptr, info_ptr));
+
+	result->bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+	result->data = row_pointers;
 
 	return result;
 }
 
 void blit(struct png_file *file, struct framebuffer *fb)
 {
-        for (y=0; y<file->height; y++) {
-                png_byte* row = row_pointers[y];
-                for (x=0; x<file->width; x++) {
-                        png_byte* ptr = &(row[x*4]);
-                        printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n",
-                               x, y, ptr[0], ptr[1], ptr[2], ptr[3]);
+	(void) file;
+	(void) fb;
+        // for (y=0; y<file->height; y++) {
+        //         png_byte* row = row_pointers[y];
+        //         for (x=0; x<file->width; x++) {
+        //                 png_byte* ptr = &(row[x*4]);
+        //                 printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n",
+        //                        x, y, ptr[0], ptr[1], ptr[2], ptr[3]);
 
-                        /* set red value to 0 and green value to the blue one */
-                        ptr[0] = 0;
-                        ptr[1] = ptr[2];
-                }
-        }
+        //                 /* set red value to 0 and green value to the blue one */
+        //                 ptr[0] = 0;
+        //                 ptr[1] = ptr[2];
+        //         }
+        // }
 
-}
-
-void process_file(void)
-{
-        if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB)
-                abort_("[process_file] input file is PNG_COLOR_TYPE_RGB but must be PNG_COLOR_TYPE_RGBA "
-                       "(lacks the alpha channel)");
-
-        if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA)
-                abort_("[process_file] color_type of input file must be PNG_COLOR_TYPE_RGBA (%d) (is %d)",
-                       PNG_COLOR_TYPE_RGBA, png_get_color_type(png_ptr, info_ptr));
-
-        for (y=0; y<height; y++) {
-                png_byte* row = row_pointers[y];
-                for (x=0; x<width; x++) {
-                        png_byte* ptr = &(row[x*4]);
-                        printf("Pixel at position [ %d - %d ] has RGBA values: %d - %d - %d - %d\n",
-                               x, y, ptr[0], ptr[1], ptr[2], ptr[3]);
-
-                        /* set red value to 0 and green value to the blue one */
-                        ptr[0] = 0;
-                        ptr[1] = ptr[2];
-                }
-        }
 }
