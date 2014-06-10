@@ -16,6 +16,7 @@ deploy: ${BIN}
 	make clean
 	rsync -av * desco:/root/desco/
 	ssh desco make -C /root/desco
+	ssh desco killall desco &> /dev/null
 
 ${BIN}: ${OBJECTS}
 	${CC} -o $@ $^ ${LDFLAGS}

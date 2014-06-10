@@ -11,7 +11,8 @@ int init_log()
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 
-	log_file = open("/var/log/desco.log", O_WRONLY | O_CREAT | O_APPEND, mode);
+	log_file = open("/var/log/desco.log",
+		O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
 
 	if (log_file < 0) {
 		perror("Cannot open /var/log/desco.log for writing");
@@ -108,7 +109,10 @@ int main(int argc, char **argv)
 		if ( SDL_WaitEvent(&event) ) {
 			switch (event.type) {
 			case SDL_MOUSEBUTTONUP:
-				shutdown();
+				if (done % 2)
+					reboot();
+				else
+					shutdown();
 				done++;
 				break;
 			case SDL_MOUSEBUTTONDOWN:
