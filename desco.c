@@ -1,10 +1,11 @@
-#include <sys/stat.h>
-#include <stdio.h>
-#include <fcntl.h>
 #include <unistd.h>
-
-#include <SDL.h>
-#include <SDL_image.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <linux/fb.h>
+#include <sys/mman.h>
+#include <stropts.h>
 
 int init_log()
 {
@@ -29,107 +30,53 @@ int init_log()
 }
 
 
-static void shutdown()
-{
-	execl("/sbin/shutdown", "shutdown", "-h", "now", NULL);
-}
+// static void shutdown()
+// {
+// 	execl("/sbin/shutdown", "shutdown", "-h", "now", NULL);
+// }
 
-static void reboot()
-{
-	execl("/sbin/shutdown", "shutdown", "-r", "now", NULL);
-}
+// static void reboot()
+// {
+// 	execl("/sbin/shutdown", "shutdown", "-r", "now", NULL);
+// }
 
-SDL_Surface *init_sdl()
-{
-	printf("Initializing SDL...\n");
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		fprintf(stderr, "Cannot initialize SDL\n");
-		return NULL;
-	}
-
-	SDL_Rect **modes;
-
-	printf("Finding video modes...\n");
-	/* Get available fullscreen/hardware modes */
-	modes=SDL_ListModes(NULL, SDL_FULLSCREEN|SDL_HWSURFACE|SDL_DOUBLEBUF);
-
-	/* Check is there are any modes available */
-	if(modes == (SDL_Rect **)0) {
-		fprintf(stderr, "No modes available!\n");
-		return NULL;
-	}
-
-	/* Check if our resolution is restricted */
-	if(modes == (SDL_Rect **)-1) {
-		fprintf(stderr, "Can't choose a resolution.\n");
-		return NULL;
-	}
-
-	/* Take the first mode, typically the best one. */
-	/* TODO allow to select another mode as well. */
-
-	printf("Setting up video mode to %dx%d...\n", modes[0]->w, modes[0]->h);
-	SDL_Surface *screen = SDL_SetVideoMode(modes[0]->w, modes[0]->h, 0,
-		SDL_FULLSCREEN|SDL_HWSURFACE);
-	if (!screen) {
-		fprintf(stderr, "Cannot set the video mode to %dx%d\n",
-			modes[0]->w, modes[0]->h);
-		return NULL;
-	}
-
-	printf("Hiding cursor...\n");
-	SDL_ShowCursor(0);
-
-	return screen;
-}
-
-int main(int argc, char **argv)
+int main(int argc, char* argv[])
 {
 	(void)argc;
 	(void)argv;
 
+	int fb = 0;
+	struct fb_var_screeninfo fb_info;
+
 	init_log();
 
-	SDL_Surface *screen = init_sdl();
-	if (!screen)
+	const char *fb_name = getenv("FRAMEBUFFER");
+	if (!fb_name)
+		fb_name = "/dev/fb0";
+
+	fb = open(fb_name, O_RDWR);
+	if (fb == -1)
+	{
+		perror("Error: cannot open framebuffer device");
 		return 1;
-
-	printf("Opening background image...\n");
-	SDL_Surface *background = IMG_Load("/root/desco/desco.png");
-	if (background) {
-		printf("Showing background image...\n");
-		SDL_BlitSurface(background, NULL, screen, NULL);
-		SDL_Flip(screen);
 	}
 
-	int done = 0;
-	SDL_Event event;
-
-	while(done <20) {
-		if ( SDL_WaitEvent(&event) ) {
-			switch (event.type) {
-			case SDL_MOUSEBUTTONUP:
-				if (done % 2)
-					reboot();
-				else
-					shutdown();
-				done++;
-				break;
-			case SDL_MOUSEBUTTONDOWN:
-				fprintf(stderr, "Button down\n");
-				break;
-			case SDL_QUIT:
-				done = 1999;
-				break;
-			default:
-				break;
-			}
-		} else {
-			SDL_Delay(10);
-		}
+	// Get variable screen information
+	if (ioctl(fb, FBIOGET_VSCREENINFO, &fb_info)) {
+		printf("Error reading variable screen info.\n");
 	}
-	printf("Terminating.\n");
-	SDL_Quit();
+	printf("Display info %dx%d, %d bpp\n",
+		fb_info.xres, fb_info.yres,
+		fb_info.bits_per_pixel);
+
+	while(getchar() != EOF)
+	{
+
+	}
+
+	// close file
+	close(fb);
 
 	return 0;
+
 }

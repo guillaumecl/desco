@@ -1,7 +1,5 @@
 CFLAGS=-Wall -Wextra -Werror -O3
-CFLAGS+=$(shell sdl-config --cflags)
 LDFLAGS=-g
-LDFLAGS+=$(shell sdl-config --libs) -lSDL_image -lSDL_ttf
 
 SOURCES=${wildcard *.c}
 HEADERS=${wildcard *.h}
@@ -16,7 +14,7 @@ deploy: ${BIN}
 	make clean
 	rsync -av * desco:/root/desco/
 	ssh desco make -C /root/desco
-	ssh desco killall desco &> /dev/null
+	ssh desco killall desco &> /dev/null || exit 0
 
 ${BIN}: ${OBJECTS}
 	${CC} -o $@ $^ ${LDFLAGS}
