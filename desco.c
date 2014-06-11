@@ -56,6 +56,8 @@ int main(int argc, char* argv[])
 
 	}
 
+	fprintf(stderr, "No more input, terminating.\n");
+
 	// close file
 	close_framebuffer(fb);
 
