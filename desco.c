@@ -7,7 +7,9 @@
 #include <sys/mman.h>
 #include <stropts.h>
 
-int init_log()
+#include "framebuffer.h"
+
+static int init_log()
 {
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -45,29 +47,9 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	int fb = 0;
-	struct fb_var_screeninfo fb_info;
-
 	init_log();
 
-	const char *fb_name = getenv("FRAMEBUFFER");
-	if (!fb_name)
-		fb_name = "/dev/fb0";
-
-	fb = open(fb_name, O_RDWR);
-	if (fb == -1)
-	{
-		perror("Error: cannot open framebuffer device");
-		return 1;
-	}
-
-	// Get variable screen information
-	if (ioctl(fb, FBIOGET_VSCREENINFO, &fb_info)) {
-		printf("Error reading variable screen info.\n");
-	}
-	printf("Display info %dx%d, %d bpp\n",
-		fb_info.xres, fb_info.yres,
-		fb_info.bits_per_pixel);
+	struct framebuffer *fb = open_framebuffer();
 
 	while(getchar() != EOF)
 	{
@@ -75,7 +57,7 @@ int main(int argc, char* argv[])
 	}
 
 	// close file
-	close(fb);
+	close_framebuffer(fb);
 
 	return 0;
 

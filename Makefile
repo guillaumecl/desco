@@ -1,7 +1,8 @@
-CFLAGS=-Wall -Wextra -Werror -O3
-CFLAGS+=$(shell  pkg-config libpng --cflags)
-LDFLAGS=-g
-LDFLAGS+=$(shell  pkg-config libpng --libs)
+LIBS=libpng
+
+CFLAGS=-Wall -Wextra -Werror -O3 $(shell pkg-config ${LIBS} --cflags)
+
+LDFLAGS=-g $(shell pkg-config ${LIBS} --libs)
 
 SOURCES=${wildcard *.c}
 HEADERS=${wildcard *.h}

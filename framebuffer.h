@@ -18,4 +18,8 @@ struct framebuffer
 	int bpp;
 };
 
+struct framebuffer *open_framebuffer();
+
+void close_framebuffer(struct framebuffer *fb);
+
 #endif
