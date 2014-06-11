@@ -22,4 +22,10 @@ struct framebuffer *open_framebuffer();
 
 void close_framebuffer(struct framebuffer *fb);
 
+
+#define C_24_TO_16(rgb)  (((((rgb>>16)&0xff) / 8) << 11) | ((((rgb>>8)&0xff) / 4) << 5) | (rgb / 8))
+
+#define C_RGB_TO_16(r,g,b) ((((r) / 8) << 11) | ((g / 4) << 5) | (b / 8))
+
+
 #endif

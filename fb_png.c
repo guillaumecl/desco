@@ -17,11 +17,6 @@ struct png_file {
 	png_bytep *data;
 };
 
-// static uint16_t c_24_to_16(uint32_t rgb)
-// {
-// 	return ((((rgb>>16)&0xff) / 8) << 11) | ((((rgb>>8)&0xff) / 4) << 5) | (rgb / 8);
-// }
-
 struct png_file *open_png_file(char* file_name, struct framebuffer *fb)
 {
 	(void)fb;
