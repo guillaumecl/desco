@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	if (!isatty(STDIN_FILENO))
+	if (!isatty(STDOUT_FILENO) || !isatty(STDERR_FILENO))
 	{
 		init_log();
 	}
@@ -56,9 +56,16 @@ int main(int argc, char* argv[])
 
 	clear_framebuffer(fb, 0, 127, 0);
 
-	while(getchar() != EOF)
+	if (isatty(STDIN_FILENO))
 	{
+		while(getchar() != EOF)
+		{
 
+		}
+	}
+	else
+	{
+		sleep(10);
 	}
 
 	fprintf(stderr, "No more input, terminating.\n");
