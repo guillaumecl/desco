@@ -35,7 +35,7 @@ struct framebuffer *open_framebuffer()
 		fb_name = "/dev/fb0";
 
 	fb = open(fb_name, O_RDWR);
-	if (fb == -1)
+	if (fb < 0)
 	{
 		perror("Error: cannot open framebuffer device");
 		return NULL;
@@ -44,20 +44,35 @@ struct framebuffer *open_framebuffer()
 	// Get variable screen information
 	if (ioctl(fb, FBIOGET_VSCREENINFO, &fb_info)) {
 		printf("Error reading variable screen info.\n");
+		close(fb);
 		return NULL;
 	}
 	if (ioctl(fb, FBIOGET_FSCREENINFO, &fb_finfo)) {
-		printf("Error reading fixed screen info.\n");
+		perror("Error reading fixed screen info.\n");
+		close(fb);
+		return NULL;
+	}
+	if (fb_info.bits_per_pixel != 16 &&
+		fb_info.bits_per_pixel != 32) {
+		fprintf(stderr, "%d bits per pixel is not supported."
+			"Only 16 or 32 are handled.\n",
+			fb_info.bits_per_pixel);
+		close(fb);
 		return NULL;
 	}
 	printf("Display info %dx%d, %d bpp\n",
 		fb_info.xres, fb_info.yres,
 		fb_info.bits_per_pixel);
+	printf("Display virt %dx%d\n",
+		fb_info.xres_virtual, fb_info.yres_virtual);
 	struct framebuffer *ret = malloc(sizeof(struct framebuffer));
 
 	ret->width = fb_info.xres;
 	ret->height = fb_info.yres;
 	ret->bpp = fb_info.bits_per_pixel;
+
+	ret->line_length = fb_finfo.line_length;
+	ret->data_length = fb_finfo.smem_len;
 
 	ret->u8_data = mmap(NULL, fb_finfo.smem_len, PROT_READ | PROT_WRITE,
 		MAP_SHARED, fb, 0);
@@ -68,18 +83,30 @@ struct framebuffer *open_framebuffer()
 		free(ret);
 		return NULL;
 	}
+	ret->fd = fb;
 	disable_blink();
-
-	close(fb);
-	unsigned int i;
-
-	for (i = 0; i < fb_finfo.smem_len/2; i ++)
-		ret->u16_data[i] = C_RGB_TO_16(30,0,0);
 
 	return ret;
 }
 
 void close_framebuffer(struct framebuffer *fb)
 {
+	close(fb->fd);
 	free(fb);
+}
+
+void clear_framebuffer(struct framebuffer *fb, uint8_t r, uint8_t g, uint8_t b)
+{
+	unsigned int i;
+
+	if (fb->bpp == 16)
+	{
+		for (i = 0; i < fb->data_length / 2; i++)
+			fb->u16_data[i] = C_RGB_TO_16(r,g,b);
+	}
+	else
+	{
+		for (i = 0; i < fb->data_length / 4; i++)
+			fb->u32_data[i] = C_RGB_TO_24(r,g,b);
+	}
 }

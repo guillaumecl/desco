@@ -51,12 +51,16 @@ int main(int argc, char* argv[])
 
 	struct framebuffer *fb = open_framebuffer();
 
+	clear_framebuffer(fb, 0, 127, 0);
+
 	while(getchar() != EOF)
 	{
 
 	}
 
 	fprintf(stderr, "No more input, terminating.\n");
+
+	clear_framebuffer(fb, 0, 0, 0);
 
 	// close file
 	close_framebuffer(fb);
