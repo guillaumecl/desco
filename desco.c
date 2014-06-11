@@ -23,8 +23,8 @@ static int init_log()
 		return 1;
 	}
 
-	if (dup2(log_file, fileno(stderr)) != fileno(stderr) ||
-		dup2(log_file, fileno(stdout)) != fileno(stdout)) {
+	if (dup2(log_file, STDERR_FILENO) != STDERR_FILENO ||
+		dup2(log_file, STDOUT_FILENO) != STDOUT_FILENO) {
 		perror("Unable to redirect output");
 		return 1;
 	}
@@ -47,7 +47,10 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	init_log();
+	if (!isatty(STDIN_FILENO))
+	{
+		init_log();
+	}
 
 	struct framebuffer *fb = open_framebuffer();
 
