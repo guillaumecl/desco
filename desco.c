@@ -8,10 +8,20 @@
 #include <stropts.h>
 #include <termios.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "framebuffer.h"
 
 int restore_term;
+
+int quit;
+
+static void interrupt_desco(int signal)
+{
+	(void)signal;
+
+	quit = 1;
+}
 
 static int init_term()
 {
@@ -93,6 +103,11 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
+	quit = 0;
+
+	signal(SIGINT, interrupt_desco);
+	signal(SIGTERM, interrupt_desco);
+
 	init_term();
 
 	struct framebuffer *fb = open_framebuffer();
@@ -101,14 +116,17 @@ int main(int argc, char* argv[])
 
 	if (isatty(STDIN_FILENO))
 	{
-		while(getchar() != EOF)
+		while(getchar() != EOF && !quit)
 		{
 
 		}
 	}
 	else
 	{
-		sleep(10);
+		while(!quit)
+		{
+			sleep(10);
+		}
 	}
 
 	fprintf(stderr, "No more input, terminating.\n");
