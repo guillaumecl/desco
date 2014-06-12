@@ -123,7 +123,11 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 		}
 		else
 		{
-			memcpy(row_data, row, width * fb->bpp / 8);
+			for (x=0; x < width ; x++)
+			{
+				png_byte* ptr = &(row[x*4]);
+				((uint32_t*)row_data)[x] = C_RGB_TO_24(ptr[0], ptr[1], ptr[2]);
+			}
 		}
 
 		for (x=0; x < width ; x++)
@@ -234,8 +238,8 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 					uint16_t dr, dg, db;
 					uint16_t rr, rg, rb;
 
-					C_16_TO_24(src, sr, sg, sb);
-					C_16_TO_24(dst, dr, dg, db);
+					C_16_TO_RGB(src, sr, sg, sb);
+					C_16_TO_RGB(dst, dr, dg, db);
 
 					rr = (dr * alpha + sr * (255 - alpha)) >> 8;
 					rg = (dg * alpha + sg * (255 - alpha)) >> 8;
@@ -246,8 +250,22 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 				}
 				else
 				{
-					fprintf(stderr, "Cannot alpha blend to 32 bit\n");
-					exit(1);
+					uint32_t src = image->u32_data[y * image->width + x];
+					uint32_t dst = fb->u32_data[(y+dst_y) * fb->width + dst_x + x];
+
+					uint16_t sr, sg, sb;
+					uint16_t dr, dg, db;
+					uint16_t rr, rg, rb;
+
+					C_32_TO_RGB(src, sr, sg, sb);
+					C_32_TO_RGB(dst, dr, dg, db);
+
+					rr = (dr * alpha + sr * (255 - alpha)) >> 8;
+					rg = (dg * alpha + sg * (255 - alpha)) >> 8;
+					rb = (db * alpha + sb * (255 - alpha)) >> 8;
+
+					fb->u32_data[(y+dst_y) * fb->width + dst_x + x] =
+						C_RGB_TO_24(rr, rg, rb);
 				}
 			}
 
