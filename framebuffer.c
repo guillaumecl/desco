@@ -14,6 +14,13 @@
 
 static int init_term()
 {
+	/* TODO looks like we should use:
+	 * ioctl(fd, KDSETMODE, KD_GRAPHICS)
+	 * restore with:
+	 * ioctl(con_fd, KDSETMODE, KD_TEXT)
+	 * instead of all this. (fd being the fd of the tty, here probably stdout works if we're a tty)
+	 */
+
 	int virtual_terminal = 0;
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
