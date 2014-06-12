@@ -15,10 +15,10 @@ struct framebuffer
 		uint32_t *u32_data;
 	};
 
-	int width;
-	int height;
+	unsigned int width;
+	unsigned int height;
 
-	int bpp;
+	unsigned int bpp;
 	unsigned int data_length;
 	unsigned int line_length;
 };

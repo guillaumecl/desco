@@ -3,6 +3,7 @@
 #include <signal.h>
 
 #include "framebuffer.h"
+#include "fb_png.h"
 
 int quit;
 
@@ -59,6 +60,31 @@ int main(int argc, char* argv[])
 		return 1;
 
 	clear_framebuffer(fb, 0, 127, 0);
+
+	fprintf(stderr, "Opening desco\n");
+
+	struct png_file *desco = open_png("/root/desco/desco.png", fb);
+	if (desco)
+	{
+		blit_png(desco, fb, 0, 0);
+		close_png(desco);
+	}
+	else
+	{
+		fprintf(stderr, "Can't open desco\n");
+	}
+	fprintf(stderr, "Opening gentoo\n");
+
+	struct png_file *gentoo = open_png("/root/desco/gentoo.png", fb);
+	if (gentoo)
+	{
+		blit_png(gentoo, fb, 30, 60);
+		close_png(gentoo);
+	}
+	else
+	{
+		fprintf(stderr, "Can't open gentoo\n");
+	}
 
 	main_loop();
 
