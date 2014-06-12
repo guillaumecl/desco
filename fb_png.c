@@ -177,7 +177,7 @@ void blit_png(struct png_file *image, struct framebuffer *fb,
 	for (y = 0; y < max_y; ++y)
 	{
 		// TODO bound checking for x.
-		memcpy(fb->u8_data + ((y+dst_y) * fb->line_length),
+		memcpy(fb->u8_data + ((y+dst_y) * fb->line_length + dst_x * fb->bpp / 8),
 			image->data + (y * image->width * fb->bpp / 8),
 			image->width * fb->bpp / 8);
 	}
