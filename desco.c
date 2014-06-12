@@ -1,23 +1,26 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stdlib.h>
+
+#include <tslib.h>
 
 #include "framebuffer.h"
 #include "fb_png.h"
 
-int quit;
+struct framebuffer *fb;
 
 static void interrupt_desco(int signal)
 {
 	(void)signal;
-
-	quit = 1;
+	close_framebuffer(fb);
+	exit(0);
 }
 
-// static void shutdown()
-// {
-// 	execl("/sbin/shutdown", "shutdown", "-h", "now", NULL);
-// }
+static void shutdown()
+{
+	execl("/sbin/shutdown", "shutdown", "-h", "now", NULL);
+}
 
 // static void reboot()
 // {
@@ -28,19 +31,39 @@ static void interrupt_desco(int signal)
 
 static void main_loop()
 {
-	if (isatty(STDIN_FILENO))
-	{
-		while(getchar() != EOF && !quit)
-		{
+	struct ts_sample samp;
+	struct tsdev *ts;
+	int retry = 5;
 
-		}
-	}
-	else
+	do
 	{
-		while(!quit)
+		ts = ts_open ("/dev/input/touchscreen", 0);
+		if (ts == NULL && retry > 1 )
 		{
-			sleep(10);
+			sleep(1);
 		}
+	} while (ts == NULL && --retry > 0);
+
+	if (!ts) {
+		perror ("ts_open");
+		return;
+	}
+
+	if (ts_config(ts)) {
+		perror("ts_config");
+		return;
+	}
+
+	while (1) {
+		int ret;
+
+		ret = ts_read(ts, &samp, 1);
+		fprintf(stderr, "Ret: %d\n", ret);
+		if (ret == 1)
+		{
+			shutdown();
+		}
+
 	}
 }
 
@@ -49,12 +72,10 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	quit = 0;
-
 	signal(SIGINT, interrupt_desco);
 	signal(SIGTERM, interrupt_desco);
 
-	struct framebuffer *fb = open_framebuffer();
+	fb = open_framebuffer();
 
 	if (!fb)
 		return 1;
