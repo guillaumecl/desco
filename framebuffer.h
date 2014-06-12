@@ -6,6 +6,8 @@
 struct framebuffer
 {
 	int fd;
+	int virtual_terminal;
+
 	union
 	{
 		uint8_t *u8_data;
