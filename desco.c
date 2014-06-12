@@ -6,19 +6,50 @@
 #include <linux/fb.h>
 #include <sys/mman.h>
 #include <stropts.h>
+#include <termios.h>
+#include <errno.h>
 
 #include "framebuffer.h"
 
-static int init_log()
+int restore_term;
+
+static int init_term()
 {
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 
-	log_file = open("/var/log/desco.log",
-		O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
+	restore_term = 0;
+	if (isatty(STDOUT_FILENO))
+	{
+		if (!getenv("VT"))
+			return 0;
+		restore_term = 1;
+		log_file = open("/tmp/desco.log",
+			O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
 
+		if (system("setterm -cursor off"))
+		{}
+		struct termios term;
+		tcgetattr(STDIN_FILENO, &term);
+		term.c_lflag &= ~ECHO;
+		tcsetattr(STDIN_FILENO, TCSANOW, &term);
+	}
+	else
+	{
+		log_file = open("/var/log/desco.log",
+			O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
+		int fd = open("/sys/class/graphics/fbcon/cursor_blink", O_WRONLY|O_TRUNC);
+		if (fd >= 0)
+		{
+			while (write(fd, "0", 1) == EINTR)
+			{
+			}
+
+			close(fd);
+		}
+	}
 	if (log_file < 0) {
-		perror("Cannot open /var/log/desco.log for writing");
+		perror("Cannot open log file for writing");
 
 		return 1;
 	}
@@ -31,6 +62,21 @@ static int init_log()
 	return 0;
 }
 
+static void reset_term()
+{
+	if (restore_term)
+	{
+		struct termios term;
+		tcgetattr(STDIN_FILENO, &term);
+		term.c_lflag |= ECHO;
+		tcsetattr(STDIN_FILENO, TCSANOW, &term);
+
+		if (system("setterm -cursor on"))
+		{
+			perror("setterm failed");
+		}
+	}
+}
 
 // static void shutdown()
 // {
@@ -47,10 +93,7 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	if (!isatty(STDOUT_FILENO) || !isatty(STDERR_FILENO))
-	{
-		init_log();
-	}
+	init_term();
 
 	struct framebuffer *fb = open_framebuffer();
 
@@ -74,6 +117,7 @@ int main(int argc, char* argv[])
 
 	// close file
 	close_framebuffer(fb);
+	reset_term();
 
 	return 0;
 

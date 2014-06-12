@@ -9,21 +9,6 @@
 #include <sys/mman.h>
 #include <stropts.h>
 
-#include <errno.h>
-
-static void disable_blink()
-{
-	int fd = open("/sys/class/graphics/fbcon/cursor_blink", O_WRONLY|O_TRUNC);
-	if (fd < 0)
-		return;
-
-	while (write(fd, "0", 1) == EINTR)
-	{
-	}
-
-	close(fd);
-}
-
 struct framebuffer *open_framebuffer()
 {
 	int fb = 0;
@@ -84,7 +69,6 @@ struct framebuffer *open_framebuffer()
 		return NULL;
 	}
 	ret->fd = fb;
-	disable_blink();
 
 	return ret;
 }
