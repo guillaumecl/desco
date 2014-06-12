@@ -13,9 +13,13 @@ struct png_file {
 	unsigned int width;
 	unsigned int height;
 
-	int alpha;
-
-	uint8_t *data;
+	union
+	{
+		uint8_t *data;
+		uint16_t *u16_data;
+		uint32_t *u32_data;
+	};
+	uint8_t *alpha;
 };
 
 struct png_file *open_png(char* file_name, struct framebuffer *fb)
@@ -31,6 +35,7 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 	png_bytep row;
 
 	uint8_t *data;
+	uint8_t *alpha;
 
         unsigned char header[8];    // 8 is the maximum size that can be checked
 
@@ -92,6 +97,7 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 
 	row = (png_bytep) malloc(png_get_rowbytes(png_ptr,info_ptr));
 	data = malloc(width * height * fb->bpp / 8);
+	alpha = malloc(width * height);
 
         /* read file */
         if (setjmp(png_jmpbuf(png_ptr)))
@@ -119,6 +125,12 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 		{
 			memcpy(row_data, row, width * fb->bpp / 8);
 		}
+
+		for (x=0; x < width ; x++)
+		{
+			png_byte* ptr = &(row[x*4]);
+			alpha[y * width + x] = ptr[3];
+		}
 	}
 
         fclose(fp);
@@ -144,6 +156,7 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 	}
 
 	result->data = data;
+	result->alpha = alpha;
 
 	return result;
 }
@@ -180,5 +193,64 @@ void blit_png(struct png_file *image, struct framebuffer *fb,
 		memcpy(fb->u8_data + ((y+dst_y) * fb->line_length + dst_x * fb->bpp / 8),
 			image->data + (y * image->width * fb->bpp / 8),
 			image->width * fb->bpp / 8);
+	}
+}
+
+void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
+	unsigned int dst_x, unsigned int dst_y)
+{
+	int x, y;
+	int max_x, max_y;
+	if (dst_y + image->height < fb->height)
+		max_y = image->height;
+	else
+		max_y = fb->height - dst_y;
+
+	if (dst_x + image->width < fb->width)
+		max_x = image->width;
+	else
+		max_x = fb->width - dst_x;
+
+
+	for (y = 0; y < max_y; ++y)
+	{
+		for(x = 0; x < max_x ; ++x)
+		{
+			uint8_t alpha = 255-image->alpha[y*image->width + x];
+			if (alpha == 255)
+				continue;
+			if (alpha == 0)
+				memcpy(fb->u8_data + ((y+dst_y) * fb->line_length + (dst_x+x) * fb->bpp / 8),
+					image->data + ((y * image->width+x) * fb->bpp / 8),
+					fb->bpp / 8);
+			else
+			{
+				if (fb->bpp == 16)
+				{
+					uint16_t src = image->u16_data[y * image->width + x];
+					uint16_t dst = fb->u16_data[(y+dst_y) * fb->width + dst_x + x];
+
+					uint16_t sr, sg, sb;
+					uint16_t dr, dg, db;
+					uint16_t rr, rg, rb;
+
+					C_16_TO_24(src, sr, sg, sb);
+					C_16_TO_24(dst, dr, dg, db);
+
+					rr = (dr * alpha + sr * (255 - alpha)) >> 8;
+					rg = (dg * alpha + sg * (255 - alpha)) >> 8;
+					rb = (db * alpha + sb * (255 - alpha)) >> 8;
+
+					fb->u16_data[(y+dst_y) * fb->width + dst_x + x] =
+						C_RGB_TO_16(rr, rg, rb);
+				}
+				else
+				{
+					fprintf(stderr, "Cannot alpha blend to 32 bit\n");
+					exit(1);
+				}
+			}
+
+		}
 	}
 }

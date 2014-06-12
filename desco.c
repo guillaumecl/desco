@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
 	struct png_file *desco = open_png("/root/desco/desco.png", fb);
 	if (desco)
 	{
-		blit_png(desco, fb, 0, 0);
+		alpha_blit_png(desco, fb, 0, 0);
 		close_png(desco);
 	}
 	else
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	struct png_file *gentoo = open_png("/root/desco/gentoo.png", fb);
 	if (gentoo)
 	{
-		blit_png(gentoo, fb, 30, 60);
+		alpha_blit_png(gentoo, fb, 30, 60);
 		close_png(gentoo);
 	}
 	else
