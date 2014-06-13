@@ -1,0 +1,27 @@
+[Unit]
+Description=Desco
+After=systemd-user-sessions.service plymouth-quit-wait.service systemd-modules-load.service
+Conflicts=getty@tty1.service
+
+Before=getty.target
+
+IgnoreOnIsolate=yes
+
+ConditionPathExists=/dev/tty0
+
+[Service]
+ExecStart=/root/desco/desco
+Type=simple
+Restart=always
+RestartSec=0
+UtmpIdentifier=tty1
+TTYPath=/dev/tty1
+TTYReset=False
+TTYVHangup=False
+TTYVTDisallocate=False
+KillMode=process
+IgnoreSIGPIPE=no
+SendSIGHUP=no
+
+[Install]
+WantedBy=getty.target
