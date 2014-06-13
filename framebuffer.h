@@ -6,7 +6,7 @@
 struct framebuffer
 {
 	int fd;
-	int virtual_terminal;
+	int console_fd;
 
 	union
 	{

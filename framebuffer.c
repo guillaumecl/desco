@@ -3,85 +3,67 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <fcntl.h>
+
 #include <linux/fb.h>
+#include <linux/kd.h>
+
 #include <sys/mman.h>
 #include <stropts.h>
-#include <termios.h>
-#include <errno.h>
 
 
 static int init_term()
 {
-	/* TODO looks like we should use:
-	 * ioctl(fd, KDSETMODE, KD_GRAPHICS)
-	 * restore with:
-	 * ioctl(con_fd, KDSETMODE, KD_TEXT)
-	 * instead of all this. (fd being the fd of the tty, here probably stdout works if we're a tty)
-	 */
-
-	int virtual_terminal = 0;
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+	int console_fd;
+
+	console_fd = open("/dev/tty", O_RDWR | O_NDELAY);
+	if (console_fd >= 0)
+	{
+
+		if (ioctl(console_fd, KDSETMODE, KD_GRAPHICS) < 0) {
+			perror("KDSETMODE");
+			close(console_fd);
+			return -1;
+		}
+	}
 
 	if (isatty(STDOUT_FILENO))
 	{
 		if (!getenv("VT"))
-			return 0;
-		virtual_terminal = 1;
+			return console_fd;
 		log_file = open("/tmp/desco.log",
 			O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
-
-		if (system("setterm -cursor off"))
-		{}
-		struct termios term;
-		tcgetattr(STDIN_FILENO, &term);
-		term.c_lflag &= ~ECHO;
-		tcsetattr(STDIN_FILENO, TCSANOW, &term);
 	}
 	else
 	{
 		log_file = open("/var/log/desco.log",
 			O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
-		int fd = open("/sys/class/graphics/fbcon/cursor_blink", O_WRONLY|O_TRUNC);
-		if (fd >= 0)
-		{
-			while (write(fd, "0", 1) == EINTR)
-			{
-			}
-
-			close(fd);
-		}
 	}
 	if (log_file < 0) {
 		perror("Cannot open log file for writing");
 
-		return 0;
+		return console_fd;
 	}
 
 	if (dup2(log_file, STDERR_FILENO) != STDERR_FILENO ||
 		dup2(log_file, STDOUT_FILENO) != STDOUT_FILENO) {
 		perror("Unable to redirect output");
-		return 0;
+		return console_fd;
 	}
-	return virtual_terminal;
+	return console_fd;
 }
 
 
-static void reset_term(int virtual_terminal)
+static void reset_term(int console_fd)
 {
-	if (virtual_terminal)
+	if (console_fd >= 0)
 	{
-		struct termios term;
-		tcgetattr(STDIN_FILENO, &term);
-		term.c_lflag |= ECHO;
-		tcsetattr(STDIN_FILENO, TCSANOW, &term);
-
-		if (system("setterm -cursor on"))
-		{
-			perror("setterm failed");
+		if (ioctl(console_fd, KDSETMODE, KD_TEXT) < 0) {
+			perror("KDSETMODE");
 		}
+		close(console_fd);
 	}
 }
 
@@ -89,11 +71,11 @@ static void reset_term(int virtual_terminal)
 struct framebuffer *open_framebuffer()
 {
 	int fb = 0;
-	int virtual_terminal;
+	int console_fd;
 	struct fb_var_screeninfo fb_info;
 	struct fb_fix_screeninfo fb_finfo;
 
-	virtual_terminal = init_term();
+	console_fd = init_term();
 
 	const char *fb_name = getenv("FRAMEBUFFER");
 	if (!fb_name)
@@ -103,7 +85,7 @@ struct framebuffer *open_framebuffer()
 	if (fb < 0)
 	{
 		perror("Error: cannot open framebuffer device");
-		reset_term(virtual_terminal);
+		reset_term(console_fd);
 		return NULL;
 	}
 
@@ -111,13 +93,13 @@ struct framebuffer *open_framebuffer()
 	if (ioctl(fb, FBIOGET_VSCREENINFO, &fb_info)) {
 		perror("Error reading variable screen info");
 		close(fb);
-		reset_term(virtual_terminal);
+		reset_term(console_fd);
 		return NULL;
 	}
 	if (ioctl(fb, FBIOGET_FSCREENINFO, &fb_finfo)) {
 		perror("Error reading fixed screen info.\n");
 		close(fb);
-		reset_term(virtual_terminal);
+		reset_term(console_fd);
 		return NULL;
 	}
 	if (fb_info.bits_per_pixel != 16 &&
@@ -126,7 +108,7 @@ struct framebuffer *open_framebuffer()
 			"Only 16 or 32 are handled.\n",
 			fb_info.bits_per_pixel);
 		close(fb);
-		reset_term(virtual_terminal);
+		reset_term(console_fd);
 		return NULL;
 	}
 	struct framebuffer *ret = malloc(sizeof(struct framebuffer));
@@ -140,13 +122,13 @@ struct framebuffer *open_framebuffer()
 
 	ret->u8_data = mmap(NULL, fb_finfo.smem_len, PROT_READ | PROT_WRITE,
 		MAP_SHARED, fb, 0);
-	ret->virtual_terminal = virtual_terminal;
+	ret->console_fd = console_fd;
 
 	if (!ret->u8_data) {
 		perror("Cannot map framebuffer");
 		close(fb);
 		free(ret);
-		reset_term(virtual_terminal);
+		reset_term(console_fd);
 		return NULL;
 	}
 	ret->fd = fb;
@@ -157,7 +139,7 @@ struct framebuffer *open_framebuffer()
 void close_framebuffer(struct framebuffer *fb)
 {
 	close(fb->fd);
-	reset_term(fb->virtual_terminal);
+	reset_term(fb->console_fd);
 	free(fb);
 }
 
