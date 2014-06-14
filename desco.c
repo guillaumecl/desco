@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 	if (!fb)
 		return 1;
 
-	clear_framebuffer(fb, 0, 127, 0);
+	clear_framebuffer(fb, 0,50, 0);
 
 	fprintf(stderr, "Opening desco\n");
 
@@ -106,6 +106,12 @@ int main(int argc, char* argv[])
 	{
 		fprintf(stderr, "Can't open gentoo\n");
 	}
+
+	print(fb, 10, 20, C_RGB_TO_24(255,0,0), "Hey, dood!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+	print(fb, 10, 40, C_RGB_TO_24(0,255,0), "ひらがな");
+
+	print(fb, 10, 48, C_RGB_TO_24(0,0,255), "ひらがな");
 
 	main_loop();
 

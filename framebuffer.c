@@ -11,6 +11,10 @@
 #include <sys/mman.h>
 #include <stropts.h>
 
+#include <string.h>
+
+#include "utf8.h"
+#include "font8x8/font8x8.h"
 
 static int init_term()
 {
@@ -156,5 +160,69 @@ void clear_framebuffer(struct framebuffer *fb, uint8_t r, uint8_t g, uint8_t b)
 	{
 		for (i = 0; i < fb->data_length / 4; i++)
 			fb->u32_data[i] = C_RGB_TO_24(r,g,b);
+	}
+}
+
+void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start_y, uint32_t color, uint32_t c)
+{
+	char *char_array = NULL;
+	if (c <= 0x7f)
+		char_array = font8x8_basic[c];
+	else if (c >= 0x80 && c <= 0x9F)
+		char_array = font8x8_control[c - 0x80];
+	else if (c >= 0xA0 && c <= 0xff)
+		char_array = font8x8_ext_latin[c - 0xA0];
+	else if (c >= 0x390 && c <= 0x3C9)
+		char_array = font8x8_greek[c - 0x3C9];
+	else if (c >= 0x2500 && c <= 0x257F)
+		char_array = font8x8_box[c - 0x2500];
+	else if (c >= 0x2580 && c <= 0x259F)
+		char_array = font8x8_block[c- 0x2580];
+	else if (c >= 0x3040 && c <= 0x309F)
+		char_array = font8x8_hiragana[c - 0x3040];
+	else
+		return;
+
+	int x,y;
+
+	for (y = 0; y < 8; ++y)
+	{
+		uint8_t val = char_array[y];
+		if (!val)
+			continue;
+
+		for (x = 0; x < 8; ++x)
+		{
+			if (val & (1 << x))
+			{
+				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
+					&color, fb->bpp / 8);
+			}
+		}
+	}
+}
+
+void print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, const char *str)
+{
+	int i = 0;
+	if (fb->bpp == 16)
+		color = C_24_TO_16(color);
+
+	uint32_t c;
+
+	while (1)
+	{
+		if (x + 7 > fb->width)
+		{
+			x = x%8;
+			y += 8;
+		}
+		if (y > fb->height)
+			break;
+		c = u8_nextchar(str, &i);
+		if (!c)
+			break;
+		print_char(fb, x, y, color, c);
+		x += 8;
 	}
 }
