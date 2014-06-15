@@ -28,8 +28,18 @@ static void shutdown()
 // }
 
 
+static void print_temp(struct framebuffer *fb, unsigned int x, unsigned int y)
+{
+	FILE *f = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
+	double d;
+	uint32_t color = C_RGB_TO_24(255,255,255);
+	if(f && fscanf(f, "%lf", &d))
+		fb_printf(fb, x, y, color, "Temp: %lf°", d/1000);
+	else
+		fb_print(fb, x, y, color, "Temp: unknown");
+}
 
-static void main_loop()
+static void main_loop(struct framebuffer *fb)
 {
 	struct ts_sample samp;
 	struct tsdev *ts;
@@ -54,16 +64,20 @@ static void main_loop()
 		return;
 	}
 
+	//int tsfd = ts_fd(ts);
+
 	while (1) {
+		print_temp(fb, 0, 200);
 		int ret;
 
 		ret = ts_read(ts, &samp, 1);
 		fprintf(stderr, "Ret: %d\n", ret);
 		if (ret == 1)
 		{
+			fb_print(fb, 0, 0, C_RGB_TO_24(255,0,0), "Initiating shutdown...");
 			shutdown();
 		}
-
+		fb_print(fb, 0, 0, C_RGB_TO_24(255,0,0), "Initiating shutdown...");
 	}
 }
 
@@ -107,13 +121,13 @@ int main(int argc, char* argv[])
 		fprintf(stderr, "Can't open gentoo\n");
 	}
 
-	print(fb, 10, 20, C_RGB_TO_24(255,0,0), "Hey, dood!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	fb_print(fb, 10, 20, C_RGB_TO_24(255,0,0), "Hey, dood!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
-	print(fb, 10, 40, C_RGB_TO_24(0,255,0), "ひらがな");
+	fb_print(fb, 10, 40, C_RGB_TO_24(0,255,0), "ひらがな");
 
-	print(fb, 10, 48, C_RGB_TO_24(0,0,255), "ひらがな");
+	fb_print(fb, 10, 48, C_RGB_TO_24(0,0,255), "ひらがな");
 
-	main_loop();
+	main_loop(fb);
 
 	close_framebuffer(fb);
 

@@ -163,7 +163,7 @@ void clear_framebuffer(struct framebuffer *fb, uint8_t r, uint8_t g, uint8_t b)
 	}
 }
 
-void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start_y, uint32_t color, uint32_t c)
+static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start_y, uint32_t color, uint32_t c)
 {
 	char *char_array = NULL;
 	if (c <= 0x7f)
@@ -202,7 +202,7 @@ void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start
 	}
 }
 
-void print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, const char *str)
+void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, const char *str)
 {
 	int i = 0;
 	if (fb->bpp == 16)
@@ -225,4 +225,32 @@ void print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t colo
 		print_char(fb, x, y, color, c);
 		x += 8;
 	}
+}
+
+void fb_vprintf(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, const char *format, va_list ap)
+{
+	int size = 100, needed;
+	char *p;
+
+	p = alloca(size);
+try_alloc:
+	needed = vsnprintf(p, size, format, ap);
+
+	if (needed < 0)
+		return;
+	if (needed >= size)
+	{
+		p = alloca(needed - size + 1);
+		size = needed + 1;
+		goto try_alloc;
+	}
+	fb_print(fb, x, y, color, p);
+}
+
+void fb_printf(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	fb_vprintf(fb, x, y, color, format, ap);
+	va_end(ap);
 }
