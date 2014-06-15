@@ -23,8 +23,7 @@ static int init_term()
 	int console_fd;
 
 	console_fd = open("/dev/tty", O_RDWR | O_NDELAY);
-	if (console_fd >= 0)
-	{
+	if (console_fd >= 0) {
 
 		if (ioctl(console_fd, KDSETMODE, KD_GRAPHICS) < 0) {
 			perror("KDSETMODE");
@@ -33,15 +32,12 @@ static int init_term()
 		}
 	}
 
-	if (isatty(STDOUT_FILENO))
-	{
+	if (isatty(STDOUT_FILENO)) {
 		if (!getenv("VT"))
 			return console_fd;
 		log_file = open("/tmp/desco.log",
 			O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
-	}
-	else
-	{
+	} else {
 		log_file = open("/var/log/desco.log",
 			O_WRONLY | O_CREAT | O_APPEND | O_SYNC, mode);
 	}
@@ -62,8 +58,7 @@ static int init_term()
 
 static void reset_term(int console_fd)
 {
-	if (console_fd >= 0)
-	{
+	if (console_fd >= 0) {
 		if (ioctl(console_fd, KDSETMODE, KD_TEXT) < 0) {
 			perror("KDSETMODE");
 		}
@@ -86,8 +81,7 @@ struct framebuffer *open_framebuffer()
 		fb_name = "/dev/fb0";
 
 	fb = open(fb_name, O_RDWR);
-	if (fb < 0)
-	{
+	if (fb < 0) {
 		perror("Error: cannot open framebuffer device");
 		reset_term(console_fd);
 		return NULL;
@@ -182,16 +176,13 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 
 	int x,y;
 
-	for (y = 0; y < 8; ++y)
-	{
+	for (y = 0; y < 8; ++y) {
 		uint8_t val = char_array[y];
 		if (!val)
 			continue;
 
-		for (x = 0; x < 8; ++x)
-		{
-			if (val & (1 << x))
-			{
+		for (x = 0; x < 8; ++x) {
+			if (val & (1 << x)) {
 				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
 					&color, fb->bpp / 8);
 			} else if ((backcolor & 0x8000000) == 0)
@@ -209,10 +200,8 @@ void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t c
 
 	uint32_t c;
 
-	while (1)
-	{
-		if (x + 7 > fb->width)
-		{
+	while (1) {
+		if (x + 7 > fb->width) {
 			x = x%8;
 			y += 8;
 		}

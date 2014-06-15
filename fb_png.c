@@ -13,8 +13,7 @@ struct png_file {
 	unsigned int width;
 	unsigned int height;
 
-	union
-	{
+	union {
 		uint8_t *data;
 		uint16_t *u16_data;
 		uint32_t *u32_data;
@@ -41,19 +40,16 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 
         /* open file and test for it being a png */
         FILE *fp = fopen(file_name, "rb");
-        if (!fp)
-	{
+        if (!fp) {
                 perror("Cannot open file");
 		return NULL;
 	}
-        if (fread(header, 1, 8, fp) != 8)
-	{
+        if (fread(header, 1, 8, fp) != 8) {
                 fprintf(stderr, "%s is not recognized as a PNG file", file_name);
 		fclose(fp);
 		return NULL;
 	}
-        if (png_sig_cmp(header, 0, 8))
-	{
+        if (png_sig_cmp(header, 0, 8)) {
                 fprintf(stderr, "%s is not recognized as a PNG file", file_name);
 		fclose(fp);
 		return NULL;
@@ -63,23 +59,20 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
         /* initialize stuff */
         png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 
-        if (!png_ptr)
-	{
+        if (!png_ptr) {
                 fprintf(stderr, "png_create_read_struct failed");
 		fclose(fp);
 		return NULL;
 	}
 
         info_ptr = png_create_info_struct(png_ptr);
-        if (!info_ptr)
-	{
+        if (!info_ptr) {
 		fprintf(stderr, " png_create_info_struct failed");
 		fclose(fp);
 		return NULL;
 	}
 
-        if (setjmp(png_jmpbuf(png_ptr)))
-	{
+        if (setjmp(png_jmpbuf(png_ptr))) {
 		fprintf(stderr, "Cannot read the PNG file");
 		fclose(fp);
 		return NULL;
@@ -100,38 +93,30 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 	alpha = malloc(width * height);
 
         /* read file */
-        if (setjmp(png_jmpbuf(png_ptr)))
-	{
+        if (setjmp(png_jmpbuf(png_ptr))) {
                 fprintf(stderr, "Error during read_image");
 		fclose(fp);
 		free(row);
 		return NULL;
 	}
 
-        for (y=0; y<height; y++)
-	{
+        for (y=0; y<height; y++) {
 		png_read_row(png_ptr, row, NULL);
 
 		uint8_t *row_data = data + (y * width) * fb->bpp / 8;
-		if (fb->bpp == 16)
-		{
-			for (x=0; x < width ; x++)
-			{
+		if (fb->bpp == 16) {
+			for (x=0; x < width ; x++) {
 				png_byte* ptr = &(row[x*4]);
 				((uint16_t*)row_data)[x] = C_RGB_TO_16(ptr[0], ptr[1], ptr[2]);
 			}
-		}
-		else
-		{
-			for (x=0; x < width ; x++)
-			{
+		} else {
+			for (x=0; x < width ; x++) {
 				png_byte* ptr = &(row[x*4]);
 				((uint32_t*)row_data)[x] = C_RGB_TO_24(ptr[0], ptr[1], ptr[2]);
 			}
 		}
 
-		for (x=0; x < width ; x++)
-		{
+		for (x=0; x < width ; x++) {
 			png_byte* ptr = &(row[x*4]);
 			alpha[y * width + x] = ptr[3];
 		}
@@ -145,15 +130,13 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
         result->height = height;
         //int color_type = png_get_color_type(png_ptr, info_ptr);
 
-	if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB)
-	{
+	if (png_get_color_type(png_ptr, info_ptr) == PNG_COLOR_TYPE_RGB) {
                 fprintf(stderr, "[process_file] input file is PNG_COLOR_TYPE_RGB but must be PNG_COLOR_TYPE_RGBA "
 			"(lacks the alpha channel)");
 		exit(1);
 	}
 
-        if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA)
-	{
+        if (png_get_color_type(png_ptr, info_ptr) != PNG_COLOR_TYPE_RGBA) {
                 fprintf(stderr, "[process_file] color_type of input file must be PNG_COLOR_TYPE_RGBA (%d) (is %d)",
 			PNG_COLOR_TYPE_RGBA, png_get_color_type(png_ptr, info_ptr));
 		exit(1);
@@ -176,8 +159,7 @@ void blit_png(struct png_file *image, struct framebuffer *fb,
 	(void) image;
 	(void) fb;
 
-	if (image->width == fb->width)
-	{
+	if (image->width == fb->width) {
 		// TODO bound checking.
 		memcpy(fb->u8_data, image->data,
 			(image->width * image->height + dst_x) * fb->bpp / 8);
@@ -191,8 +173,7 @@ void blit_png(struct png_file *image, struct framebuffer *fb,
 		max_y = fb->height - dst_y;
 
 
-	for (y = 0; y < max_y; ++y)
-	{
+	for (y = 0; y < max_y; ++y) {
 		// TODO bound checking for x.
 		memcpy(fb->u8_data + ((y+dst_y) * fb->line_length + dst_x * fb->bpp / 8),
 			image->data + (y * image->width * fb->bpp / 8),
@@ -216,21 +197,17 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 		max_x = fb->width - dst_x;
 
 
-	for (y = 0; y < max_y; ++y)
-	{
-		for(x = 0; x < max_x ; ++x)
-		{
+	for (y = 0; y < max_y; ++y) {
+		for(x = 0; x < max_x ; ++x) {
 			uint8_t alpha = 255-image->alpha[y*image->width + x];
 			if (alpha == 255)
 				continue;
-			if (alpha == 0)
+			if (alpha == 0) {
 				memcpy(fb->u8_data + ((y+dst_y) * fb->line_length + (dst_x+x) * fb->bpp / 8),
 					image->data + ((y * image->width+x) * fb->bpp / 8),
 					fb->bpp / 8);
-			else
-			{
-				if (fb->bpp == 16)
-				{
+			} else {
+				if (fb->bpp == 16) {
 					uint16_t src = image->u16_data[y * image->width + x];
 					uint16_t dst = fb->u16_data[(y+dst_y) * fb->width + dst_x + x];
 
@@ -247,9 +224,7 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 
 					fb->u16_data[(y+dst_y) * fb->width + dst_x + x] =
 						C_RGB_TO_16(rr, rg, rb);
-				}
-				else
-				{
+				} else {
 					uint32_t src = image->u32_data[y * image->width + x];
 					uint32_t dst = fb->u32_data[(y+dst_y) * fb->width + dst_x + x];
 
