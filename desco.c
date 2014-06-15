@@ -5,6 +5,8 @@
 
 #include <tslib.h>
 
+#include <poll.h>
+
 #include "framebuffer.h"
 #include "fb_png.h"
 
@@ -34,9 +36,12 @@ static void print_temp(struct framebuffer *fb, unsigned int x, unsigned int y)
 	double d;
 	uint32_t color = C_RGB_TO_24(255,255,255);
 	if(f && fscanf(f, "%lf", &d))
-		fb_printf(fb, x, y, color, "Temp: %lf°", d/1000);
+	{
+		fb_printf(fb, x, y, color, 0, "Temp: %lf°", d/1000);
+		fclose(f);
+	}
 	else
-		fb_print(fb, x, y, color, "Temp: unknown");
+		fb_print(fb, x, y, color, 0, "Temp: unknown");
 }
 
 static void main_loop(struct framebuffer *fb)
@@ -44,12 +49,11 @@ static void main_loop(struct framebuffer *fb)
 	struct ts_sample samp;
 	struct tsdev *ts;
 	int retry = 5;
+	struct pollfd polls;
 
-	do
-	{
+	do {
 		ts = ts_open ("/dev/input/touchscreen", 0);
-		if (ts == NULL && retry > 1 )
-		{
+		if (ts == NULL && retry > 1 ) {
 			sleep(1);
 		}
 	} while (ts == NULL && --retry > 0);
@@ -64,20 +68,22 @@ static void main_loop(struct framebuffer *fb)
 		return;
 	}
 
-	//int tsfd = ts_fd(ts);
+	polls.events = POLLIN;
+	polls.fd = ts_fd(ts);
 
 	while (1) {
 		print_temp(fb, 0, 200);
 		int ret;
 
-		ret = ts_read(ts, &samp, 1);
-		fprintf(stderr, "Ret: %d\n", ret);
-		if (ret == 1)
-		{
-			fb_print(fb, 0, 0, C_RGB_TO_24(255,0,0), "Initiating shutdown...");
-			shutdown();
+		ret = poll(&polls, 1, 1000);
+		if (polls.revents) {
+			ret = ts_read(ts, &samp, 1);
+			fprintf(stderr, "Ret: %d\n", ret);
+			if (ret == 1) {
+				fb_print(fb, 0, 0, C_RGB_TO_24(255,0,0), 0, "Initiating shutdown...");
+				shutdown();
+			}
 		}
-		fb_print(fb, 0, 0, C_RGB_TO_24(255,0,0), "Initiating shutdown...");
 	}
 }
 
@@ -99,33 +105,27 @@ int main(int argc, char* argv[])
 	fprintf(stderr, "Opening desco\n");
 
 	struct png_file *desco = open_png("/root/desco/desco.png", fb);
-	if (desco)
-	{
+	if (desco) {
 		alpha_blit_png(desco, fb, 0, 0);
 		close_png(desco);
-	}
-	else
-	{
+	} else {
 		fprintf(stderr, "Can't open desco\n");
 	}
 	fprintf(stderr, "Opening gentoo\n");
 
 	struct png_file *gentoo = open_png("/root/desco/gentoo.png", fb);
-	if (gentoo)
-	{
+	if (gentoo) {
 		alpha_blit_png(gentoo, fb, 30, 60);
 		close_png(gentoo);
-	}
-	else
-	{
+	} else {
 		fprintf(stderr, "Can't open gentoo\n");
 	}
 
-	fb_print(fb, 10, 20, C_RGB_TO_24(255,0,0), "Hey, dood!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	fb_print(fb, 10, 20, C_RGB_TO_24(255,0,0), 0, "Hey, dood!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 
-	fb_print(fb, 10, 40, C_RGB_TO_24(0,255,0), "ひらがな");
+	fb_print(fb, 10, 40, C_RGB_TO_24(0,255,0), 0, "ひらがな");
 
-	fb_print(fb, 10, 48, C_RGB_TO_24(0,0,255), "ひらがな");
+	fb_print(fb, 10, 48, C_RGB_TO_24(0,0,255), 0, "ひらがな");
 
 	main_loop(fb);
 
