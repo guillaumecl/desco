@@ -178,7 +178,7 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 
 	for (y = 0; y < 8; ++y) {
 		uint8_t val = char_array[y];
-		if (!val)
+		if (!val && (backcolor & 0x8000000))
 			continue;
 
 		for (x = 0; x < 8; ++x) {
