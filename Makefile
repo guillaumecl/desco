@@ -1,11 +1,11 @@
 LIBS=libpng tslib
 
-CFLAGS=-Wall -Wextra -Werror -O3 $(shell pkg-config ${LIBS} --cflags)
+CFLAGS=-Wall -Wextra -Werror -O3 $(shell pkg-config ${LIBS} --cflags) -I
 
 LDFLAGS=-g $(shell pkg-config ${LIBS} --libs)
 
-SOURCES=${wildcard *.c}
-HEADERS=${wildcard *.h}
+SOURCES=${wildcard *.c */*.c}
+HEADERS=${wildcard *.h */*.h}
 OBJECTS=$(SOURCES:%.c=%.o)
 
 BIN=desco
@@ -29,4 +29,4 @@ ${BIN}: ${OBJECTS}
 .PHONY: clean all
 
 clean:
-	rm -rf *.o ${BIN}
+	rm -rf *.o */*.o ${BIN}

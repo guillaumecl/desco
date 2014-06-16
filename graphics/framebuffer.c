@@ -13,8 +13,8 @@
 
 #include <string.h>
 
-#include "utf8.h"
-#include "font8x8/font8x8.h"
+#include "text/utf8.h"
+#include "font/font8x8.h"
 
 static int init_term()
 {
@@ -185,9 +185,10 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 			if (val & (1 << x)) {
 				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
 					&color, fb->bpp / 8);
-			} else if ((backcolor & 0x8000000) == 0)
+			} else if ((backcolor & 0x8000000) == 0) {
 				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
 					&backcolor, fb->bpp / 8);
+			}
 		}
 	}
 }

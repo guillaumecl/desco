@@ -1,23 +1,13 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <signal.h>
-#include <stdlib.h>
 
 #include <tslib.h>
 
 #include <poll.h>
 
-#include "framebuffer.h"
-#include "fb_png.h"
-
-struct framebuffer *fb;
-
-static void interrupt_desco(int signal)
-{
-	(void)signal;
-	close_framebuffer(fb);
-	exit(0);
-}
+#include "graphics/framebuffer.h"
+#include "graphics/fb_png.h"
+#include "signals.h"
 
 static void shutdown()
 {
@@ -92,14 +82,12 @@ int main(int argc, char* argv[])
 	(void)argc;
 	(void)argv;
 
-	signal(SIGINT, interrupt_desco);
-	signal(SIGTERM, interrupt_desco);
-
-	fb = open_framebuffer();
+	struct framebuffer *fb = open_framebuffer();
 
 	if (!fb)
 		return 1;
 
+	setup_signals(fb);
 	clear_framebuffer(fb, 0,50, 0);
 
 	fprintf(stderr, "Opening desco\n");
