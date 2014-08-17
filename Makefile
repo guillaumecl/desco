@@ -14,8 +14,7 @@ all: ${BIN}
 
 # deploy depends on the binary so that we're sure it compiles here, at least.
 deploy: ${BIN}
-	make clean
-	rsync -av * desco:/root/desco/
+	rsync --exclude='*.o' --exclude='desco' --delete -av * desco:/root/desco/
 	ssh desco make -C /root/desco
 	ssh desco killall desco &> /dev/null || exit 0
 
