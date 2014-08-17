@@ -22,7 +22,7 @@ static int init_term()
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 	int console_fd;
 
-	console_fd = open("/dev/tty", O_RDWR | O_NDELAY);
+	console_fd = open("/dev/tty1", O_RDWR | O_NDELAY);
 	if (console_fd >= 0) {
 
 		if (ioctl(console_fd, KDSETMODE, KD_GRAPHICS) < 0) {
