@@ -1,6 +1,6 @@
 LIBS=libpng tslib
 
-CFLAGS=-Wall -Wextra -Werror -O3 $(shell pkg-config ${LIBS} --cflags) -I
+CFLAGS=-Wall -Wextra -Werror -O3 $(shell pkg-config ${LIBS} --cflags) -I.
 
 LDFLAGS=-g $(shell pkg-config ${LIBS} --libs)
 
