@@ -21,10 +21,12 @@ static int init_term()
 	int log_file;
 	mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
 	int console_fd;
+	char *tty_name = ttyname(STDIN_FILENO);
 
-	console_fd = open("/dev/tty1", O_RDWR | O_NDELAY);
+	if (!tty_name)
+		tty_name = "/dev/tty1";
+	console_fd = open(tty_name, O_RDWR | O_NDELAY);
 	if (console_fd >= 0) {
-
 		if (ioctl(console_fd, KDSETMODE, KD_GRAPHICS) < 0) {
 			perror("KDSETMODE");
 			close(console_fd);
