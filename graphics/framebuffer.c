@@ -198,8 +198,10 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, uint32_t backcolor, const char *str)
 {
 	int i = 0;
-	if (fb->bpp == 16)
+	if (fb->bpp == 16) {
 		color = C_24_TO_16(color);
+		backcolor = C_24_TO_16(backcolor);
+	}
 
 	uint32_t c;
 
