@@ -166,7 +166,7 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 	else if (c >= 0xA0 && c <= 0xff)
 		char_array = font8x8_ext_latin[c - 0xA0];
 	else if (c >= 0x390 && c <= 0x3C9)
-		char_array = font8x8_greek[c - 0x3C9];
+		char_array = font8x8_greek[c - 0x390];
 	else if (c >= 0x2500 && c <= 0x257F)
 		char_array = font8x8_box[c - 0x2500];
 	else if (c >= 0x2580 && c <= 0x259F)
