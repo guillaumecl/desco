@@ -44,22 +44,30 @@ static void main_loop(struct framebuffer *fb)
 	int retry = 5;
 	struct pollfd polls;
 
+	fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen...");
 	do {
 		ts = ts_open ("/dev/input/touchscreen", 0);
 		if (ts == NULL && retry > 1 ) {
+			fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen... Trying again… ");
 			sleep(1);
+			fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen... Trying again !");
 		}
 	} while (ts == NULL && --retry > 0);
 
 	if (!ts) {
+		fb_print(fb, 0, 0, textcolor, backcolor, "Cannot open touchscreen.                           ");
 		perror ("ts_open");
 		return;
 	}
 
+	fb_print(fb, 0, 0, textcolor, backcolor, "Configuring touchscreen...                           ");
 	if (ts_config(ts)) {
+		fb_print(fb, 0, 0, textcolor, backcolor, "ts_config failed.                           ");
 		perror("ts_config");
 		return;
 	}
+
+	fb_print(fb, 0, 0, textcolor, backcolor, "                                            ");
 
 	polls.events = POLLIN;
 	polls.fd = ts_fd(ts);
@@ -99,6 +107,7 @@ int main(int argc, char* argv[])
 
 	fprintf(stderr, "Opening desco\n");
 
+	fb_print(fb, 10, 20, textcolor, backcolor, "Opening desco…");
 	struct png_file *desco = open_png("/root/desco/desco.png", fb);
 	if (desco) {
 		alpha_blit_png(desco, fb, 0, 0);
@@ -106,6 +115,8 @@ int main(int argc, char* argv[])
 	} else {
 		fprintf(stderr, "Can't open desco\n");
 	}
+
+	fb_print(fb, 10, 20, textcolor, backcolor, "Opening gentoo…");
 	fprintf(stderr, "Opening gentoo\n");
 
 	struct png_file *gentoo = open_png("/root/desco/gentoo.png", fb);
