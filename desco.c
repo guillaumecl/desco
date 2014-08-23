@@ -86,6 +86,8 @@ static void main_loop(struct framebuffer *fb)
 			}
 		}
 	}
+
+	ts_close(ts);
 }
 
 int main(int argc, char* argv[])
