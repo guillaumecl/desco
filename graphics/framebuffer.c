@@ -143,23 +143,20 @@ void close_framebuffer(struct framebuffer *fb)
 	free(fb);
 }
 
-void clear_framebuffer(struct framebuffer *fb, uint8_t r, uint8_t g, uint8_t b)
+void clear_framebuffer(struct framebuffer *fb, color_t color)
 {
 	unsigned int i;
-	uint32_t color = 0;
 
 	if (fb->bpp == 16) {
-		color = rgb_to_16(r,g,b);
 		for (i = 0; i < fb->data_length / 2; i++)
-			fb->u16_data[i] = color;
+			fb->u16_data[i] = color.value;
 	} else {
-		color = rgb_to_24(r,g,b);
 		for (i = 0; i < fb->data_length / 4; i++)
-			fb->u32_data[i] = color;
+			fb->u32_data[i] = color.value;
 	}
 }
 
-static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start_y, uint32_t color, uint32_t backcolor, uint32_t c)
+static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start_y, color_t color, color_t backcolor, uint32_t c)
 {
 	char *char_array = NULL;
 	if (c <= 0x7f)
@@ -183,28 +180,24 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 
 	for (y = 0; y < 8; ++y) {
 		uint8_t val = char_array[y];
-		if (!val && (backcolor & 0x8000000))
+		if (!val && is_transparent(backcolor))
 			continue;
 
 		for (x = 0; x < 8; ++x) {
 			if (val & (1 << x)) {
 				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
-					&color, fb->bpp / 8);
-			} else if ((backcolor & 0x8000000) == 0) {
+					&color.value, fb->bpp / 8);
+			} else if (!is_transparent(backcolor)) {
 				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
-					&backcolor, fb->bpp / 8);
+					&backcolor.value, fb->bpp / 8);
 			}
 		}
 	}
 }
 
-void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, uint32_t backcolor, const char *str)
+void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, color_t color, color_t backcolor, const char *str)
 {
 	int i = 0;
-	if (fb->bpp == 16) {
-		color = c24_to_16(color);
-		backcolor = c24_to_16(backcolor);
-	}
 
 	uint32_t c;
 
@@ -223,7 +216,7 @@ void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t c
 	}
 }
 
-void fb_vprintf(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, uint32_t backcolor, const char *format, va_list ap)
+void fb_vprintf(struct framebuffer *fb, unsigned int x, unsigned int y, color_t color, color_t backcolor, const char *format, va_list ap)
 {
 	int size = 100, needed;
 	char *p;
@@ -242,7 +235,7 @@ try_alloc:
 	fb_print(fb, x, y, color, backcolor, p);
 }
 
-void fb_printf(struct framebuffer *fb, unsigned int x, unsigned int y, uint32_t color, uint32_t backcolor, const char *format, ...)
+void fb_printf(struct framebuffer *fb, unsigned int x, unsigned int y, color_t color, color_t backcolor, const char *format, ...)
 {
 	va_list ap;
 	va_start(ap, format);
