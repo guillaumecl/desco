@@ -104,21 +104,18 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 		png_read_row(png_ptr, row, NULL);
 
 		uint8_t *row_data = data + (y * width) * fb->bpp / 8;
-		if (fb->bpp == 16) {
-			for (x=0; x < width ; x++) {
-				png_byte* ptr = &(row[x*4]);
-				((uint16_t*)row_data)[x] = rgb_to_16(ptr[0], ptr[1], ptr[2]);
-			}
-		} else {
-			for (x=0; x < width ; x++) {
-				png_byte* ptr = &(row[x*4]);
-				((uint32_t*)row_data)[x] = rgb_to_24(ptr[0], ptr[1], ptr[2]);
-			}
-		}
+		png_byte* ptr = row;
+		for (x=0; x < width ; x++, ptr += 4) {
+			uint8_t r = ptr[0];
+			uint8_t g = ptr[1];
+			uint8_t b = ptr[2];
+			uint8_t a = ptr[3];
 
-		for (x=0; x < width ; x++) {
-			png_byte* ptr = &(row[x*4]);
-			alpha[y * width + x] = ptr[3];
+			alpha[y * width + x] = a;
+			if (fb->bpp == 16)
+				((uint16_t*)row_data)[x] = rgb_to_16(r, g, b);
+			else
+				((uint32_t*)row_data)[x] = rgb_to_24(r, g, b);
 		}
 	}
 
