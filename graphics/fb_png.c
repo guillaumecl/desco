@@ -150,6 +150,10 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
 
 void close_png(struct png_file *file)
 {
+	if (file) {
+		free(file->data);
+		free(file->alpha);
+	}
 	free(file);
 }
 
