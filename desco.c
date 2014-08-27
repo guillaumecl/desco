@@ -12,15 +12,18 @@
 static color_t backcolor;
 static color_t textcolor;
 
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
 static void shutdown()
 {
-	execl("/sbin/shutdown", "shutdown", "-h", "now", NULL);
+	execl("/usr/bin/systemctl", "poweroff", NULL);
 }
 
-// static void reboot()
-// {
-// 	execl("/sbin/shutdown", "shutdown", "-r", "now", NULL);
-// }
+static void reboot()
+{
+	execl("/usr/bin/systemctl", "reboot", NULL);
+}
 
 
 static void print_temp(struct framebuffer *fb, unsigned int x, unsigned int y)
@@ -80,9 +83,21 @@ static void main_loop(struct framebuffer *fb)
 		if (polls.revents) {
 			ret = ts_read(ts, &samp, 1);
 			fprintf(stderr, "Ret: %d\n", ret);
+
 			if (ret == 1) {
-				fb_print(fb, 0, 0, textcolor, backcolor, "Initiating shutdown...");
-				shutdown();
+				unsigned int x = max(samp.x, 0);
+				unsigned int y = max(samp.y, 0);
+
+				fprintf(stderr, "x: %d, y: %d\n", x, y);
+				if (x >= fb->width - 30 && y <= 30) {
+					fb_print(fb, 0, 0, textcolor, backcolor, "Initiating shutdown...");
+					shutdown();
+				} else if (x >= fb->width - 30 && y >= fb->height - 30) {
+					fb_print(fb, 0, 0, textcolor, backcolor, "Initiating reboot...");
+					reboot();
+				} else if (x <= 30 && y <= 30) {
+					break;
+				}
 			}
 		}
 	}
