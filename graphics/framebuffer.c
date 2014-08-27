@@ -146,14 +146,13 @@ void close_framebuffer(struct framebuffer *fb)
 void clear_framebuffer(struct framebuffer *fb, color_t color)
 {
 	unsigned int i;
+	unsigned int value = color.value;
 
 	if (fb->bpp == 16) {
-		for (i = 0; i < fb->data_length / 2; i++)
-			fb->u16_data[i] = color.value;
-	} else {
-		for (i = 0; i < fb->data_length / 4; i++)
-			fb->u32_data[i] = color.value;
+		value |= (value << 16);
 	}
+	for (i = 0; i < fb->data_length / 4; i++)
+		fb->u32_data[i] = value;
 }
 
 static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned int start_y, color_t color, color_t backcolor, uint32_t c)
