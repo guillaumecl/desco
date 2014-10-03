@@ -103,7 +103,7 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
         for (y=0; y<height; y++) {
 		png_read_row(png_ptr, row, NULL);
 
-		uint8_t *row_data = data + (y * width) * fb->bpp / 8;
+		uint8_t *row_data = data + y * fb->line_length;
 		png_byte* ptr = row;
 		for (x=0; x < width ; x++, ptr += 4) {
 			uint8_t r = ptr[0];
@@ -160,7 +160,7 @@ void blit_png(struct png_file *image, struct framebuffer *fb,
 	(void) image;
 	(void) fb;
 
-	if (image->width == fb->width) {
+	if (image->width == fb->width && image->width == fb->line_length) {
 		// TODO bound checking.
 		memcpy(fb->u8_data, image->data,
 			(image->width * image->height + dst_x) * fb->bpp / 8);

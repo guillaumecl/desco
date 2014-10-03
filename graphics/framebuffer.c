@@ -184,10 +184,10 @@ static void print_char(struct framebuffer *fb, unsigned int start_x, unsigned in
 
 		for (x = 0; x < 8; ++x) {
 			if (val & (1 << x)) {
-				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
+				memcpy(fb->u8_data + (start_y + y) * fb->line_length + (start_x + x) * fb->bpp / 8,
 					&color.value, fb->bpp / 8);
 			} else if (!is_transparent(backcolor)) {
-				memcpy(fb->u8_data + ((start_y + y) * fb->width + start_x + x) * fb->bpp / 8,
+				memcpy(fb->u8_data + (start_y + y) * fb->line_length + (start_x + x) * fb->bpp / 8,
 					&backcolor.value, fb->bpp / 8);
 			}
 		}
