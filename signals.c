@@ -20,4 +20,5 @@ void setup_signals(struct framebuffer *fb)
 
 	signal(SIGINT, interrupt_desco);
 	signal(SIGTERM, interrupt_desco);
+	signal(SIGSEGV, interrupt_desco);
 }

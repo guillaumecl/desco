@@ -138,8 +138,9 @@ struct framebuffer *open_framebuffer()
 
 void close_framebuffer(struct framebuffer *fb)
 {
-	close(fb->fd);
 	reset_term(fb->console_fd);
+	munmap(fb->u8_data, fb->data_length);
+	close(fb->fd);
 	free(fb);
 }
 
