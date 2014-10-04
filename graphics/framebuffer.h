@@ -40,6 +40,10 @@ void close_framebuffer(struct framebuffer *fb);
 
 void clear_framebuffer(struct framebuffer *fb, color_t c);
 
+void pause_framebuffer(struct framebuffer *fb);
+
+void resume_framebuffer(struct framebuffer *fb);
+
 void fb_print(struct framebuffer *fb, unsigned int x, unsigned int y, color_t c, color_t back_color, const char *str);
 void fb_printf(struct framebuffer *fb, unsigned int x, unsigned int y, color_t c, color_t back_color, const char *format, ...);
 

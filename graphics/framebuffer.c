@@ -144,6 +144,20 @@ void close_framebuffer(struct framebuffer *fb)
 	free(fb);
 }
 
+void pause_framebuffer(struct framebuffer *fb)
+{
+	if (fb->console_fd >= 0 &&
+		ioctl(fb->console_fd, KDSETMODE, KD_TEXT) < 0)
+		perror("KDSETMODE");
+}
+
+void resume_framebuffer(struct framebuffer *fb)
+{
+	if (fb->console_fd >= 0 &&
+		ioctl(fb->console_fd, KDSETMODE, KD_GRAPHICS) < 0)
+		perror("KDSETMODE");
+}
+
 void clear_framebuffer(struct framebuffer *fb, color_t color)
 {
 	unsigned int i;

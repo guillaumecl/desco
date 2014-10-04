@@ -14,6 +14,20 @@ static void interrupt_desco(int signal)
 	exit(0);
 }
 
+static void pause_desco(int signal)
+{
+	(void)signal;
+	if (global_fb)
+		pause_framebuffer(global_fb);
+}
+
+static void resume_desco(int signal)
+{
+	(void)signal;
+	if (global_fb)
+		resume_framebuffer(global_fb);
+}
+
 void setup_signals(struct framebuffer *fb)
 {
 	global_fb = fb;
@@ -21,4 +35,7 @@ void setup_signals(struct framebuffer *fb)
 	signal(SIGINT, interrupt_desco);
 	signal(SIGTERM, interrupt_desco);
 	signal(SIGSEGV, interrupt_desco);
+
+	signal(SIGTSTP, pause_desco);
+	signal(SIGCONT, resume_desco);
 }
