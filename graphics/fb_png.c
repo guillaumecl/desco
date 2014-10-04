@@ -103,7 +103,7 @@ struct png_file *open_png(char* file_name, struct framebuffer *fb)
         for (y=0; y<height; y++) {
 		png_read_row(png_ptr, row, NULL);
 
-		uint8_t *row_data = data + y * fb->line_length;
+		uint8_t *row_data = data + (y * width) * fb->bpp / 8 ;
 		png_byte* ptr = row;
 		for (x=0; x < width ; x++, ptr += 4) {
 			uint8_t r = ptr[0];
@@ -210,7 +210,7 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 			} else {
 				if (fb->bpp == 16) {
 					uint16_t src = image->u16_data[y * image->width + x];
-					uint16_t dst = fb->u16_data[(y+dst_y) * fb->width + dst_x + x];
+					uint16_t dst = fb->u16_data[(y+dst_y) * fb->line_length / 2 + dst_x + x];
 
 					uint16_t sr, sg, sb;
 					uint16_t dr, dg, db;
@@ -227,7 +227,7 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 						rgb_to_16(rr, rg, rb);
 				} else {
 					uint32_t src = image->u32_data[y * image->width + x];
-					uint32_t dst = fb->u32_data[(y+dst_y) * fb->width + dst_x + x];
+					uint32_t dst = fb->u32_data[(y+dst_y) * fb->line_length/4 + dst_x + x];
 
 					uint16_t sr, sg, sb;
 					uint16_t dr, dg, db;
@@ -240,7 +240,7 @@ void alpha_blit_png(struct png_file *image, struct framebuffer *fb,
 					rg = (dg * alpha + sg * (255 - alpha)) >> 8;
 					rb = (db * alpha + sb * (255 - alpha)) >> 8;
 
-					fb->u32_data[(y+dst_y) * fb->width + dst_x + x] =
+					fb->u32_data[(y+dst_y) * fb->line_length/4 + dst_x + x] =
 						rgb_to_24(rr, rg, rb);
 				}
 			}
