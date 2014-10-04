@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <tslib.h>
 
@@ -105,10 +106,22 @@ static void main_loop(struct framebuffer *fb)
 	ts_close(ts);
 }
 
+void setup_directory()
+{
+	const char *path = getenv("DESCO_PATH");
+	if (!path)
+		return;
+
+	if(chdir(path))
+		perror("Cannot set the current directory");
+}
+
 int main(int argc, char* argv[])
 {
 	(void)argc;
 	(void)argv;
+
+	setup_directory();
 
 	struct framebuffer *fb = open_framebuffer();
 
@@ -125,7 +138,7 @@ int main(int argc, char* argv[])
 	fprintf(stderr, "Opening desco\n");
 
 	fb_print(fb, 10, 20, textcolor, backcolor, "Opening desco…");
-	struct png_file *desco = open_png("/root/desco/desco.png", fb);
+	struct png_file *desco = open_png("desco.png", fb);
 	if (desco) {
 		alpha_blit_png(desco, fb, 0, 0);
 		close_png(desco);
@@ -136,7 +149,7 @@ int main(int argc, char* argv[])
 	fb_print(fb, 10, 20, textcolor, backcolor, "Opening gentoo…");
 	fprintf(stderr, "Opening gentoo\n");
 
-	struct png_file *gentoo = open_png("/root/desco/gentoo.png", fb);
+	struct png_file *gentoo = open_png("gentoo.png", fb);
 	if (gentoo) {
 		alpha_blit_png(gentoo, fb, 30, 60);
 		close_png(gentoo);
