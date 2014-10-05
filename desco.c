@@ -7,6 +7,7 @@
 #include "signals.h"
 
 #include "input/touchscreen.h"
+#include "input/stdin.h"
 #include "input/input_event.h"
 #include "input/input.h"
 
@@ -52,8 +53,10 @@ static void parse_input(struct input *in, void *d)
 	struct loop_data *data = (struct loop_data*)d;
 	struct framebuffer *fb = data->fb;
 
-	if (in->type == event_key)
+	if (in->type == event_key) {
+		data->stop = 1;
 		return;
+	}
 
 	unsigned int x = max(in->mouse.x, 0);
 	unsigned int y = max(in->mouse.y, 0);
@@ -73,9 +76,7 @@ static void parse_input(struct input *in, void *d)
 static void main_loop(struct framebuffer *fb)
 {
 	struct input_queue *queue;
-	struct input_device *ts_device;
 	struct loop_data data;
-	int retry = 5;
 
 	queue = alloc_input_queue();
 	if (!queue) {
@@ -83,22 +84,8 @@ static void main_loop(struct framebuffer *fb)
 		return;
 	}
 
-	fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen...");
-	do {
-		ts_device = open_touchscreen("/dev/input/touchscreen");
-		if (!ts_device)
-			sleep(1);
-	} while (ts_device == NULL && --retry > 0);
-
-	if (!ts_device) {
-		fb_print(fb, 0, 0, textcolor, backcolor, "Cannot open touchscreen.                           ");
-		perror ("ts_open");
-		return;
-	}
-
-	fb_print(fb, 0, 0, textcolor, backcolor, "                                            ");
-
-	register_input(queue, ts_device);
+	register_input(queue, open_touchscreen("/dev/input/touchscreen"));
+	register_input(queue, open_stdin());
 
 	data.fb = fb;
 	data.stop = 0;
