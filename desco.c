@@ -2,19 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <tslib.h>
-
-#include <poll.h>
-
 #include "graphics/framebuffer.h"
 #include "graphics/fb_png.h"
 #include "signals.h"
+
+#include "input/touchscreen.h"
+#include "input/input_event.h"
+#include "input/input.h"
 
 static color_t backcolor;
 static color_t textcolor;
 
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #define min(a,b) (((a) < (b)) ? (a) : (b))
+
+struct loop_data
+{
+	struct framebuffer *fb;
+	int stop;
+};
 
 static void shutdown()
 {
@@ -41,69 +47,67 @@ static void print_temp(struct framebuffer *fb, unsigned int x, unsigned int y)
 		fb_print(fb, x, y, color, backcolor, "Temp: unknown");
 }
 
+static void parse_input(struct input *in, void *d)
+{
+	struct loop_data *data = (struct loop_data*)d;
+	struct framebuffer *fb = data->fb;
+
+	if (in->type == event_key)
+		return;
+
+	unsigned int x = max(in->mouse.x, 0);
+	unsigned int y = max(in->mouse.y, 0);
+
+	fprintf(stderr, "x: %d, y: %d\n", x, y);
+	if (x >= fb->width - 30 && y <= 30) {
+		fb_print(fb, 0, 0, textcolor, backcolor, "Initiating shutdown...");
+		shutdown();
+	} else if (x >= fb->width - 30 && y >= fb->height - 30) {
+		fb_print(fb, 0, 0, textcolor, backcolor, "Initiating reboot...");
+		reboot();
+	} else if (x <= 30 && y <= 30) {
+		data->stop = 1;
+	}
+}
+
 static void main_loop(struct framebuffer *fb)
 {
-	struct ts_sample samp;
-	struct tsdev *ts;
+	struct input_queue *queue;
+	struct input_device *ts_device;
+	struct loop_data data;
 	int retry = 5;
-	struct pollfd polls;
+
+	queue = alloc_input_queue();
+	if (!queue) {
+		fb_print(fb, 0, 0, textcolor, backcolor, "Cannot create input queue.                           ");
+		return;
+	}
 
 	fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen...");
 	do {
-		ts = ts_open ("/dev/input/touchscreen", 0);
-		if (ts == NULL && retry > 1 ) {
-			fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen... Trying again… ");
+		ts_device = open_touchscreen("/dev/input/touchscreen");
+		if (!ts_device)
 			sleep(1);
-			fb_print(fb, 0, 0, textcolor, backcolor, "Trying to open touchscreen... Trying again !");
-		}
-	} while (ts == NULL && --retry > 0);
+	} while (ts_device == NULL && --retry > 0);
 
-	if (!ts) {
+	if (!ts_device) {
 		fb_print(fb, 0, 0, textcolor, backcolor, "Cannot open touchscreen.                           ");
 		perror ("ts_open");
 		return;
 	}
 
-	fb_print(fb, 0, 0, textcolor, backcolor, "Configuring touchscreen...                           ");
-	if (ts_config(ts)) {
-		fb_print(fb, 0, 0, textcolor, backcolor, "ts_config failed.                           ");
-		perror("ts_config");
-		return;
-	}
-
 	fb_print(fb, 0, 0, textcolor, backcolor, "                                            ");
 
-	polls.events = POLLIN;
-	polls.fd = ts_fd(ts);
+	register_input(queue, ts_device);
 
-	while (1) {
+	data.fb = fb;
+	data.stop = 0;
+	while (!data.stop) {
 		print_temp(fb, 0, 200);
-		int ret;
-
-		ret = poll(&polls, 1, 1000);
-		if (polls.revents) {
-			ret = ts_read(ts, &samp, 1);
-			fprintf(stderr, "Ret: %d\n", ret);
-
-			if (ret == 1) {
-				unsigned int x = max(samp.x, 0);
-				unsigned int y = max(samp.y, 0);
-
-				fprintf(stderr, "x: %d, y: %d\n", x, y);
-				if (x >= fb->width - 30 && y <= 30) {
-					fb_print(fb, 0, 0, textcolor, backcolor, "Initiating shutdown...");
-					shutdown();
-				} else if (x >= fb->width - 30 && y >= fb->height - 30) {
-					fb_print(fb, 0, 0, textcolor, backcolor, "Initiating reboot...");
-					reboot();
-				} else if (x <= 30 && y <= 30) {
-					break;
-				}
-			}
-		}
+		poll_input(queue, parse_input, 1000, &data);
 	}
 
-	ts_close(ts);
+	free_input_queue(queue);
 }
 
 void setup_directory()
