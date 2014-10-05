@@ -38,6 +38,9 @@ struct input_queue *alloc_input_queue()
 
 int register_input(struct input_queue *queue, struct input_device *device)
 {
+	if (!device)
+		return 0;
+
 	struct pollfd *p;
 	list_add_tail(&device->entry, &queue->devices);
 
