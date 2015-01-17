@@ -1,5 +1,6 @@
 desco
 *.o
+*.d
 *~
 GTAGS
 GRTAGS

@@ -8,6 +8,7 @@ LDFLAGS=-g $(shell pkg-config ${LIBS} --libs)
 SOURCES=${wildcard *.c */*.c}
 HEADERS=${wildcard *.h */*.h}
 OBJECTS=$(SOURCES:%.c=%.o)
+DEPS=$(SOURCES:%.c=%.d)
 
 DEPLOY_HOST?=desco
 DEPLOY_DIR?=/root/desco
@@ -26,10 +27,12 @@ ${BIN}: ${OBJECTS}
 	${CC} -o $@ $^ ${LDFLAGS}
 
 
-%.o:%.c ${HEADERS}
-	${CC} -o $@ -c $< ${CFLAGS}
+%.o:%.c
+	${CC} -MMD -o $@ -c $< ${CFLAGS}
 
 .PHONY: clean all
 
 clean:
-	rm -rf *.o */*.o ${BIN}
+	rm -rf *.o */*.o ${BIN} *.d
+
+-include ${DEPS}
