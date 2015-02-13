@@ -5,9 +5,9 @@ NAME=desco
 DEPLOY_HOST?=desco
 DEPLOY_DIR?=/root/desco
 
+SUBDIRS = graphics graphics/font input text
 
-include Makefile.base
-
+include base.mk
 
 # deploy depends on the binary so that we're sure it compiles here, at least.
 deploy: ${BIN}
