@@ -12,6 +12,10 @@ CFLAGS += $(shell pkg-config ${LIBS} --cflags)
 LDFLAGS += $(shell pkg-config ${LIBS} --libs)
 endif
 
+ifdef DEBUG
+CFLAGS+=-DDEBUG -g
+endif
+
 ifndef VERBOSE
 	V=@
 endif
@@ -52,3 +56,4 @@ clean:
 	${V} rm -rf ${BUILD_DIR}
 
 -include ${DEPS}
+${foreach dir,$(SUBDIRS),${eval -include $(dir)/subdir.mk}}
