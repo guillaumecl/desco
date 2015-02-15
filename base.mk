@@ -55,5 +55,9 @@ ${BUILD_DIR}/%.o:%.c ${BUILD_DEP}
 clean:
 	${V} rm -rf ${BUILD_DIR}
 
+# subdir can evaluate this variable to detect where they are
+CUR_DIR = $(shell dirname $(lastword $(MAKEFILE_LIST)))
+CUR_BUILD_DIR = ${BUILD_DIR}/${CUR_DIR}
+
 -include ${DEPS}
 ${foreach dir,$(SUBDIRS),${eval -include $(dir)/subdir.mk}}
