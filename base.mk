@@ -48,6 +48,10 @@ ${BUILD_DIR}/%.o:%.c | ${BUILD_DIR}
 	@echo "Compiling $<…"
 	${V} ${CC} -MMD -o $@ -c $< ${CFLAGS}
 
+%.a:
+	${AR} rcs $@ $<
+
+
 .PHONY: clean all install
 
 clean:
