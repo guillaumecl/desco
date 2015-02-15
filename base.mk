@@ -31,22 +31,20 @@ SOURCES:=${wildcard *.c} ${foreach dir,$(SUBDIRS),${wildcard $(dir)/*.c}}
 HEADERS:=${wildcard *.c} ${foreach dir,$(SUBDIRS),${wildcard $(dir)/*.h}}
 OBJECTS:=$(SOURCES:%.c=${BUILD_DIR}/%.o)
 DEPS:=$(SOURCES:%.c=${BUILD_DIR}/%.d)
-BUILD_DEP:=${BUILD_DIR}/phony
 
 all: ${BIN}
 
 # Create all the file hierarchy of folders in the build directory
-${BUILD_DEP}:
+${BUILD_DIR}:
 	${V} mkdir -p ${BUILD_DIR}
 	${V} ${foreach dir,$(SUBDIRS),mkdir -p ${BUILD_DIR}/$(dir)}
-	${V} touch ${BUILD_DEP}
 
-${BIN}: ${OBJECTS} ${BUILD_DEP}
+${BIN}: ${OBJECTS} | ${BUILD_DEP}
 	@echo "Linking $<…"
 	${V} ${CC} -o $@ ${OBJECTS} ${LDFLAGS}
 
 
-${BUILD_DIR}/%.o:%.c ${BUILD_DEP}
+${BUILD_DIR}/%.o:%.c | ${BUILD_DIR}
 	@echo "Compiling $<…"
 	${V} ${CC} -MMD -o $@ -c $< ${CFLAGS}
 
